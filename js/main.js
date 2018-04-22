@@ -1,61 +1,79 @@
 var benbenpage = 1;
 var luoguURL = "https://luogu.org";
-var data = [];
+var noticeURL =
+  "https://www.luogu.org/space/ajax_getnotice?uid=72813&mynotice=1&page=";
+var commentURL =
+  "https://www.luogu.org/space/ajax_getnotice?uid=71371&mynotice=0&page=";
+var uid = 1;
 
-function add(page, html) {
-  data[page] = html;
+var getcharURL = "https://www.luogu.org/space/ajax_getchatnum"; // 接收通知地址
+
+function noticeURL(uid) {
+  `${noticeURL}`;
 }
 
-function exist(page) {
-  return data.findIndex(page);
+// 初始化uid等多种信息
+function init() {
+  const rq = new XMLHttpRequest();
+  rq.onreadystatechange = () => {
+    document.getElementById("web").innerHTML = rq.response;
+  };
+  rq.open("GET", luoguURL, true);
+  rq.send();
 }
 
-// 替换其中的链接
-function replaceHref() {
-  let messages = document.getElementsByClassName(
-    "am-comment am-comment-warning"
-  );
-  for (var i in messages) {
-    let oldElem = messages[i]
-      .getElementsByClassName("am-comment-meta")[0]
-      .getElementsByTagName("a")[0];
-
-    // find href in message
-    const messageURL = oldElem.getAttribute("href");
-    // get New href
-    let url = `${luoguURL}${messageURL}`;
-
-    // create
-    oldElem.removeAttribute("href");
-    oldElem.setAttribute("href", url);
-    oldElem.setAttribute("target", "_");
-    console.log(oldElem);
+// 找到对方说的话
+function findComment() {
+  //
+  var comments = document.getElementsByClassName("am-comment");
+  for (var i in comments) {
+    const comment = comments[i];
+    const url = comment.getElementsByTagName("a")[0].getAttribute("href");
   }
-  console.log(messages);
+}
+
+// 替换所有链接
+function replaceHref() {
+  var tags = document.getElementById("notice").getElementsByTagName("a");
+  console.log(tags);
+  var regex = /\/*/;
+  for (i in tags) {
+    console.log(tags[i]);
+    const href = tags[i].getAttribute("href");
+    if (href && regex.test(href)) {
+      const url = `${luoguURL}${href}`;
+      tags[i].setAttribute("href", url);
+      tags[i].setAttribute("target", "_");
+    }
+  }
+  console.log("替换完成");
 }
 
 function nextPage() {
-  request(benbenpage, () => {
-    benbenpage++;
-    console.log(benbenpage);
-  });
+  request(
+    benbenpage,
+    html => {
+      benbenpage++;
+    },
+    noticeURL
+  );
   replaceHref();
 }
 
 function prePage() {
-  request(benbenpage, () => {
-    if (benbenpage >= 1) benbenpage--;
-    else {
-      const elem = document.getElementById("notice");
-      elem.innerHTML = "<p>已经是第一页！</p>";
-    }
-  });
+  request(
+    benbenpage,
+    html => {
+      if (benbenpage > 2) benbenpage--;
+    },
+    noticeURL
+  );
   replaceHref();
 }
 
-function request(page, success) {
+function request(page, success, url) {
   const rq = new XMLHttpRequest();
-  rq.onreadystatechange = () => {
+  rq.onloadend = () => {
     const elem = document.getElementById("notice");
     let html = "<p>未知错误</p>";
     if (rq.status == 200) {
@@ -64,19 +82,16 @@ function request(page, success) {
       const context = JSON.parse(responseText);
       // console.log(responseText);
       html = context["more"].html;
-      success();
+      success(html);
     }
     elem.innerHTML = html;
   };
-  rq.open(
-    "GET",
-    `https://www.luogu.org/space/ajax_getnotice?uid=72813&mynotice=1&page=${page.toString()}`,
-    false
-  );
+  rq.open("GET", `${url}${page.toString()}`, true);
   rq.send();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  init();
   document.getElementById("next_notice").addEventListener("click", nextPage);
   document.getElementById("pre_notice").addEventListener("click", prePage);
   document.getElementById("test").addEventListener("click", test);
