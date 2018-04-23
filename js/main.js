@@ -1,25 +1,50 @@
+// Global var
 var benbenpage = 1;
 var luoguURL = "https://luogu.org";
 var noticeURL =
-  "https://www.luogu.org/space/ajax_getnotice?uid=72813&mynotice=1&page=";
+  "https://www.luogu.org/space/ajax_getnotice?uid=1&mynotice=1&page=";
 var commentURL =
-  "https://www.luogu.org/space/ajax_getnotice?uid=71371&mynotice=0&page=";
+  "https://www.luogu.org/space/ajax_getnotice?uid=1&mynotice=0&page=";
 var uid = 1;
-
 var getcharURL = "https://www.luogu.org/space/ajax_getchatnum"; // 接收通知地址
+var HTML = [];
+//
+function setUrls(uid_) {
+  uid = uid_;
+  noticeURL = `https://www.luogu.org/space/ajax_getnotice?uid=${uid_}&mynotice=1&page=`;
+  commentURL = `https://www.luogu.org/space/ajax_getnotice?uid=${uid_}&mynotice=0&page=`;
+}
+
+function save(html, page) {
+  if (!page) return;
+  HTML[page] = html;
+}
+
+function exist(page) {
+  return !(HTML[page] === null)
+}
 
 function noticeURL(uid) {
   `${noticeURL}`;
 }
 
 // 初始化uid等多种信息
+// 本人不会其他方法，只好先加html然后读取uid再删除了
 function init() {
   const rq = new XMLHttpRequest();
   rq.onreadystatechange = () => {
-    document.getElementById("web").innerHTML = rq.response;
+    const ele = document.getElementById("web");
+    ele.innerHTML = rq.response;
+    const lis = ele.getElementsByClassName('am-dropdown-content');
+    const url = lis[1].getElementsByTagName('a')[0].getAttribute('href');
+    var regex = /\d+/g;
+    const uid_ = url.match(regex);
+    setUrls(uid_);
+    ele.innerHTML = '';
   };
   rq.open("GET", luoguURL, true);
   rq.send();
+  // TODO
 }
 
 // 找到对方说的话
@@ -50,9 +75,11 @@ function replaceHref() {
 }
 
 function nextPage() {
+
   request(
     benbenpage,
     html => {
+      save(html, benbenpage);
       benbenpage++;
     },
     noticeURL
@@ -82,7 +109,7 @@ function request(page, success, url) {
       const context = JSON.parse(responseText);
       // console.log(responseText);
       html = context["more"].html;
-      success(html);
+      setTimeout(success(html), 10);
     }
     elem.innerHTML = html;
   };
@@ -90,7 +117,7 @@ function request(page, success, url) {
   rq.send();
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   init();
   document.getElementById("next_notice").addEventListener("click", nextPage);
   document.getElementById("pre_notice").addEventListener("click", prePage);
