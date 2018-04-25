@@ -32,15 +32,16 @@ function noticeURL(uid) {
 // 本人不会其他方法，只好先加html然后读取uid再删除了
 function init() {
   const rq = new XMLHttpRequest();
-  rq.onreadystatechange = () => {
+  rq.onload = () => {
     const ele = document.getElementById("web");
     ele.innerHTML = rq.response;
     const lis = ele.getElementsByClassName('am-dropdown-content');
     const url = lis[1].getElementsByTagName('a')[0].getAttribute('href');
     var regex = /\d+/g;
-    const uid_ = url.match(regex);
+    const uid_ = url.match(regex)[0];
     setUrls(uid_);
     ele.innerHTML = '';
+    console.log(uid_);
   };
   rq.open("GET", luoguURL, true);
   rq.send();
@@ -59,57 +60,49 @@ function findComment() {
 
 // 替换所有链接
 function replaceHref() {
-  var tags = document.getElementById("notice").getElementsByTagName("a");
+  let tags = document.getElementById('notice').getElementsByTagName('a');
   console.log(tags);
-  var regex = /\/*/;
-  for (i in tags) {
-    console.log(tags[i]);
-    const href = tags[i].getAttribute("href");
-    if (href && regex.test(href)) {
+  for (var i in tags) {
+    if (tags[i].hasAttribute('href')) {
+      let href = tags[i].getAttribute('href');
+      var regex = /^\/*/;
       const url = `${luoguURL}${href}`;
-      tags[i].setAttribute("href", url);
-      tags[i].setAttribute("target", "_");
+      href = href.replace(regex, url);
+      tags[i].setAttribute('href', href);
+      tags[i].setAttribute('target', '_');
     }
   }
-  console.log("替换完成");
 }
 
-function nextPage() {
 
-  request(
-    benbenpage,
-    html => {
-      save(html, benbenpage);
-      benbenpage++;
-    },
-    noticeURL
-  );
-  replaceHref();
+// replaceHref 方法采用同步方法会导致出错
+function nextPage() {
+  getNotice(benbenpage, noticeURL, () => {
+    benbenpage++;
+    setTimeout(replaceHref, 10);
+  });
 }
 
 function prePage() {
-  request(
-    benbenpage,
-    html => {
-      if (benbenpage > 2) benbenpage--;
-    },
-    noticeURL
-  );
-  replaceHref();
+  getNotice(benbenpage, noticeURL, () => {
+    if (benbenpage > 2) benbenpage--;
+    setTimeout(replaceHref, 10);
+  });
 }
 
-function request(page, success, url) {
+function getNotice(page, url, success) {
   const rq = new XMLHttpRequest();
-  rq.onloadend = () => {
+  rq.onload = () => {
     const elem = document.getElementById("notice");
-    let html = "<p>未知错误</p>";
-    if (rq.status == 200) {
+    let html = "<p>未知错误</p>"; // error status
+    if (rq.status === 200) {
       // when success to access
       const responseText = rq.response;
-      const context = JSON.parse(responseText);
-      // console.log(responseText);
+      const context = JSON.parse(responseText); // 此处转化会有报错，但是不影响实际使用
       html = context["more"].html;
-      setTimeout(success(html), 10);
+      success();
+    } else {
+
     }
     elem.innerHTML = html;
   };
@@ -118,6 +111,7 @@ function request(page, success, url) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // 初始化
   init();
   document.getElementById("next_notice").addEventListener("click", nextPage);
   document.getElementById("pre_notice").addEventListener("click", prePage);
