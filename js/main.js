@@ -5,6 +5,7 @@ var noticeURL =
   "https://www.luogu.org/space/ajax_getnotice?uid=1&mynotice=1&page=";
 var commentURL =
   "https://www.luogu.org/space/ajax_getnotice?uid=1&mynotice=0&page=";
+var benbenURL = "https://www.luogu.org/feed/all?page=";
 var uid = 1;
 var getcharURL = "https://www.luogu.org/space/ajax_getchatnum"; // 接收通知地址
 var HTML = [];
@@ -21,31 +22,29 @@ function save(html, page) {
 }
 
 function exist(page) {
-  return !(HTML[page] === null)
+  return !(HTML[page] === null);
 }
 
 function noticeURL(uid) {
   `${noticeURL}`;
 }
 
-// 初始化uid等多种信息
-// 本人不会其他方法，只好先加html然后读取uid再删除了
 function init() {
+  // 读取uid然后删除
   const rq = new XMLHttpRequest();
   rq.onload = () => {
     const ele = document.getElementById("web");
     ele.innerHTML = rq.response;
-    const lis = ele.getElementsByClassName('am-dropdown-content');
-    const url = lis[1].getElementsByTagName('a')[0].getAttribute('href');
+    const lis = ele.getElementsByClassName("am-dropdown-content");
+    const url = lis[1].getElementsByTagName("a")[0].getAttribute("href");
     var regex = /\d+/g;
     const uid_ = url.match(regex)[0];
     setUrls(uid_);
-    ele.innerHTML = '';
-    console.log(uid_);
+    ele.innerHTML = "";
+    console.log(`您的uid是：${uid_}`);
   };
   rq.open("GET", luoguURL, true);
   rq.send();
-  // TODO
 }
 
 // 找到对方说的话
@@ -59,21 +58,21 @@ function findComment() {
 }
 
 // 替换所有链接
+// 防止点到错误的地方
 function replaceHref() {
-  let tags = document.getElementById('notice').getElementsByTagName('a');
+  let tags = document.getElementById("notice").getElementsByTagName("a");
   console.log(tags);
-  for (var i in tags) {
-    if (tags[i].hasAttribute('href')) {
-      let href = tags[i].getAttribute('href');
-      var regex = /^\/*/;
+  Array.prototype.forEach.call(tags, (value, index) => {
+    if (value.hasAttribute("href")) {
+      let href = tags[index].getAttribute("href");
+      let regex = /^\/*/;
       const url = `${luoguURL}${href}`;
       href = href.replace(regex, url);
-      tags[i].setAttribute('href', href);
-      tags[i].setAttribute('target', '_');
+      tags[index].setAttribute("href", href);
+      tags[index].setAttribute("target", "_");
     }
-  }
+  });
 }
-
 
 // replaceHref 方法采用同步方法会导致出错
 function nextPage() {
@@ -102,7 +101,6 @@ function getNotice(page, url, success) {
       html = context["more"].html;
       success();
     } else {
-
     }
     elem.innerHTML = html;
   };
@@ -110,16 +108,10 @@ function getNotice(page, url, success) {
   rq.send();
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
   // 初始化
   init();
   document.getElementById("next_notice").addEventListener("click", nextPage);
   document.getElementById("pre_notice").addEventListener("click", prePage);
   document.getElementById("test").addEventListener("click", test);
 });
-
-// 洛谷网页的转换函数，在Chrome插件中无法使用
-// $.get("/space/ajax_mynotice", function(data) {
-//   var arr = eval("(" + data + ")");
-//   $(".lg-content-left").html(arr["more"]["html"]);
-// });

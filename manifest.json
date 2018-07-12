@@ -9,6 +9,10 @@
     "default_title": "Luogu Notice",
     "default_popup": "popup.html"
   },
+  "background": {
+    "script": ["js/background.js"],
+    "persistent": true
+  },
   "permissions": ["cookies", "tabs", "http://*/*", "https://*/*"],
   "homepage_url": "http://himself65.com"
 }
